@@ -1,0 +1,199 @@
+#include <TTP229.h>
+
+#include <MIDI.h>
+#include <midi_Defs.h>
+#include <midi_Message.h>
+#include <midi_Namespace.h>
+#include <midi_Settings.h>
+
+ int velocity = 127;//음량을 최대크기로 설정
+
+ int R1 = 13;
+ int R2 = 12;
+ int R3 = 8;
+
+const int SCL_PIN = 7;  //클록핀의 번호
+const int SDO_PIN = 4;  //데이터 핀의번호
+
+TTP229 ttp229(SCL_PIN, SDO_PIN);
+//원래 기타의 기본음 설정
+ int one = 40;
+ int two = 45;
+ int thr = 50;
+ int fou = 55;
+ int fiv = 59;
+ int six = 64;
+ 
+ int noteON = 144;//144 = 10010000 2진수 형태로 전원on커맨드보냄
+ int noteOFF = 128;//128 = 10000000 2진수 형태로 전원off커맨드 보냄.
+
+MIDI_CREATE_DEFAULT_INSTANCE();
+byte Key;
+
+void setup() {
+  //  Set MIDI baud rate:
+  MIDI.begin();
+  
+  Serial.begin(115200); //시리얼 통신 속도 115200
+  
+  pinMode(R1, OUTPUT);
+  pinMode(R2,OUTPUT);
+  pinMode(R3,OUTPUT);
+  
+ digitalWrite(R1, LOW);
+ digitalWrite(R2 ,LOW);
+ digitalWrite(R3, LOW);
+}
+
+void loop() {
+ int val1 = analogRead(A0);
+ int val2 = analogRead(A1);
+ int val3 = analogRead(A2);
+ int val4 = analogRead(A3);
+ int val5 = analogRead(A4);
+ int val6 = analogRead(A5);
+
+
+ //G코드
+ if(Key == 9){
+  one = 43;
+  two = 47;
+  thr = 50;
+  fou = 55;
+  fiv = 59;
+  six = 67;
+  }
+  //D코드
+  if(Key == 10){
+  one = 40;
+  two = 45;
+  thr = 50;
+  fou = 57;
+  fiv = 62;
+  six = 66;
+  }
+//Em코드
+ if(Key == 11){
+  one = 40;
+  two = 47;
+  thr = 52;
+  fou = 55;
+  fiv = 59;
+  six = 64;
+  }
+//Bm코드
+ if(Key == 12){
+  one = 42;
+  two = 47;
+  thr = 54;
+  fou = 59;
+  fiv = 62;
+  six = 66;
+  }
+//C코드
+ if(Key == 13){
+  one = 40;
+  two = 48;
+  thr = 52;
+  fou = 55;
+  fiv = 60;
+  six = 64;
+  }
+//Am코드
+ if(Key == 14){
+ one = 40;
+  two = 45;
+  thr = 52;
+  fou = 57;
+  fiv = 60;
+  six = 64;
+  }
+//Bm 코드
+ if(Key == 15){
+  one = 42;
+  two = 47;
+  thr = 54;
+  fou = 59;
+  fiv = 62;
+  six = 66;
+  }
+//원래 기본음
+ if(Key == 16){
+  one = 40;
+  two = 45;
+  thr = 50;
+  fou = 55;
+  fiv = 59;
+  six = 64;
+  }
+ 
+ //레이저에 불키기.
+   digitalWrite(R1,HIGH);
+   digitalWrite(R2,HIGH);
+   digitalWrite(R3,HIGH);
+   //만약 조도센서의 값이 1000보다 작으면
+   //시리얼통신으로 소리를 나게함
+if(val1<990){
+ MIDImessage(noteON, one, velocity);//MIDI.h 헤더에있는
+                                    //MIDImessage를 보내는함수
+    delay(5);
+    
+   //MIDImessage(noteOFF, 68, velocity);//turn note off
+    //delay(300);//wait 200ms until triggering next note
+}
+
+
+
+if(val2<900){
+  MIDImessage(noteON, two, velocity);
+    delay(5);
+}
+
+if(val3<990){
+  MIDImessage(noteON, thr, velocity);
+    delay(5);
+  }
+
+if(val4<990){
+  MIDImessage(noteON, fou, velocity);
+    delay(5);
+  }
+
+if(val5<990){
+  MIDImessage(noteON, fiv, velocity);
+    delay(5);
+  }
+
+if(val6<990){
+  MIDImessage(noteON, six, velocity);
+    delay(5);
+  }
+
+  Key = Read_Keypad(); //터치센서 키입력값을 받을 변수
+   if(Key)
+   Serial.println(Key);
+}
+//send MIDI message
+
+
+byte Read_Keypad(void)
+{
+  byte Count;
+  byte Key_State = 0;
+  for(Count = 1; Count <= 16; Count++)
+  {
+    digitalWrite(SCL_PIN, LOW); 
+    if (!digitalRead(SDO_PIN)) //키벨류에 해당하는 값을 읽었을때
+      Key_State = Count; //변수에 현재 값을 넣어줌.
+    
+    digitalWrite(SCL_PIN, HIGH); 
+  }  
+  
+  return Key_State; //
+}
+
+void MIDImessage(int command, int MIDInote, int MIDIvelocity) {
+  Serial.write(command);//노트의 온오프 상태를 보냄.
+  Serial.write(MIDInote);//음계번호
+  Serial.write(MIDIvelocity);//음량크기
+}
